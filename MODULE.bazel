@@ -4,19 +4,22 @@ module(
     compatibility_level = 1,
 )
 
-bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "platforms", version = "1.1.0")
 
-# Prebuilt protoc, so Stardoc does not drag in a from-source protobuf build.
-# Generating the two reference docs otherwise costs ~1,470 exec-configuration
-# actions -- 643 CppCompile among them -- to produce protoc, against 3 actions
-# of actual documentation work.
-bazel_dep(name = "toolchains_protoc", version = "0.6.1")
+# Marked dev because it exists solely to make //docs fast. Consumers never
+# analyze that package, so this must not appear in their module graph or
+# constrain their protobuf resolution.
+bazel_dep(name = "toolchains_protoc", version = "0.6.1", dev_dependency = True)
 
 # Pin protoc near the resolved protobuf version (33.4; v33.0 is the newest the
-# toolchain knows). The default is 27.3,
-# which predates the `--option_dependencies` flag Bazel 9 passes, and fails as
-# "Unknown flag: --option_dependencies" during descriptor-set generation.
-protoc = use_extension("@toolchains_protoc//protoc:extensions.bzl", "protoc")
+# toolchain publishes). The toolchain default is 27.3, which predates the
+# `--option_dependencies` flag Bazel 9 passes and fails descriptor-set
+# generation with "Unknown flag: --option_dependencies".
+protoc = use_extension(
+    "@toolchains_protoc//protoc:extensions.bzl",
+    "protoc",
+    dev_dependency = True,
+)
 protoc.toolchain(
     google_protobuf = "com_google_protobuf",
     version = "v33.0",
