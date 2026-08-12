@@ -22,8 +22,8 @@ jobs:
         # is end-of-life and is deliberately not tested.
         bazel: ["8.x", "9.x"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.10.0
+      - uses: actions/checkout@v7
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}-${{ matrix.os }}-${{ matrix.bazel }}
@@ -36,7 +36,7 @@ jobs:
     name: buildifier lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: install buildifier
         run: |
           curl -fsSL -o /usr/local/bin/buildifier \
@@ -56,8 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.10.0
+      - uses: actions/checkout@v7
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}-lake
@@ -83,7 +83,7 @@ jobs:
         # v4.30.0-rc2 matches the cslib pin; we want compat in case
         # downstream consumers depend on both rules_lean and cslib.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: install elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
