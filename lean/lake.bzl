@@ -964,4 +964,13 @@ lake = module_extension(
         "toolchain": _toolchain_tag,
         "workspace": _workspace_tag,
     },
+    # The implementation reads `mctx.os` to pick the distribution whose `lake`
+    # runs at FETCH time, so its result is not platform-independent. Without
+    # these two flags Bazel records one evaluation in MODULE.bazel.lock and
+    # replays it everywhere: a lock written on macOS pins
+    # `lean_dist_<version>_darwin_aarch64` as the fetch-time toolchain, and a
+    # Linux machine using that lock downloads a Mach-O toolchain it cannot run,
+    # failing during extraction rather than with anything that names the cause.
+    os_dependent = True,
+    arch_dependent = True,
 )
