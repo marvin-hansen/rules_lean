@@ -16,10 +16,7 @@ exports_files(
 
 filegroup(
     name = "library_sources",
-    srcs = glob([
-        "RulesLean.lean",
-        "RulesLean/**/*.lean",
-    ]),
+    srcs = ["RulesLean.lean"] + glob(["RulesLean/**/*.lean"]),
 )
 
 filegroup(
