@@ -18,19 +18,20 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        # The versions this ruleset supports, matching .bcr/presubmit.yml. Bazel 7
-        # is end-of-life and is deliberately not tested.
-        bazel: ["8.x", "9.x"]
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}-${{ matrix.os }}-${{ matrix.bazel }}
+          disk-cache: ${{ github.workflow }}-${{ matrix.os }}
           repository-cache: true
+      # Deliberately one Bazel version, the one .bazelversion pins. Stardoc's
+      # output is NOT version-stable -- Bazel 8 and 9 document a repository
+      # rule's implicit `repo_mapping` attribute differently -- so committed
+      # reference docs can only match the version they were generated with.
+      # Cross-version support is asserted by .bcr/presubmit.yml instead, which
+      # builds rather than diffs.
       - run: bazel test //docs/... --test_output=errors
-        env:
-          USE_BAZEL_VERSION: ${{ matrix.bazel }}
 
   buildifier:
     name: buildifier lint

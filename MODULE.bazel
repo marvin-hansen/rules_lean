@@ -6,6 +6,22 @@ module(
 
 bazel_dep(name = "platforms", version = "1.0.0")
 
+# Prebuilt protoc, so Stardoc does not drag in a from-source protobuf build.
+# Generating the two reference docs otherwise costs ~1,470 exec-configuration
+# actions -- 643 CppCompile among them -- to produce protoc, against 3 actions
+# of actual documentation work.
+bazel_dep(name = "toolchains_protoc", version = "0.6.1")
+
+# Pin protoc near the resolved protobuf version (33.4; v33.0 is the newest the
+# toolchain knows). The default is 27.3,
+# which predates the `--option_dependencies` flag Bazel 9 passes, and fails as
+# "Unknown flag: --option_dependencies" during descriptor-set generation.
+protoc = use_extension("@toolchains_protoc//protoc:extensions.bzl", "protoc")
+protoc.toolchain(
+    google_protobuf = "com_google_protobuf",
+    version = "v33.0",
+)
+
 # bazel_skylib is loaded at file scope by lean/BUILD.bazel and
 # lean/private/BUILD.bazel (`bzl_library` for stardoc), so it has to be
 # resolvable when consumers load `@rules_lean//lean`. Can't be dev-only.

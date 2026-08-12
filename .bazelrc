@@ -1,0 +1,4 @@
+# Resolve protoc through a toolchain so a prebuilt binary is used instead of one
+# compiled from source. Without this, any Stardoc target builds protobuf's C++
+# sources first: ~1,470 exec-configuration actions to generate two markdown files.
+common --incompatible_enable_proto_toolchain_resolution
