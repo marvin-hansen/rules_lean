@@ -96,7 +96,18 @@ jobs:
       - name: smoke the CLIs
         working-directory: lean/lib
         run: |
-          # Sanity: each lean_exe target's --help-style empty invocation
-          # exits with the documented 2 (usage) rather than crashing.
-          lake exe oleanImports 2>/dev/null; test $? -eq 2
-          lake exe leanClosure   2>/dev/null; test $? -eq 2
+          # Sanity: each lean_exe target's --help-style empty invocation exits
+          # with the documented 2 (usage) rather than crashing.
+          #
+          # `cmd; test $? -eq 2` cannot work here. GitHub runs this with `bash -e`,
+          # so the shell exits at the non-zero `cmd` before `test` is ever reached,
+          # and the step fails exactly when the CLI behaves as documented. Capturing
+          # the status with `|| rc=$?` keeps errexit from firing.
+          for exe in oleanImports leanClosure; do
+            rc=0
+            lake exe "$exe" 2>/dev/null || rc=$?
+            if [ "$rc" -ne 2 ]; then
+              echo "$exe: expected usage exit 2, got $rc" >&2
+              exit 1
+            fi
+          done
