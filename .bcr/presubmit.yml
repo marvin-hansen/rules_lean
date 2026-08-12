@@ -1,0 +1,20 @@
+# Registry presubmit runs on BCR's infrastructure, so this module is deliberately
+# Mathlib-free: it exercises toolchain resolution, download and execution against
+# Lean core only.
+#
+# A presubmit that fetched Mathlib would pull gigabytes per submission and be slow
+# and flaky -- a demonstration, to reviewers, of the exact cost this ruleset exists
+# to remove. The Mathlib-dependent examples run in this repository's own CI, where
+# the repository cache and a pinned olean archive make them cheap.
+bcr_test_module:
+  module_path: "examples/bcr_smoke"
+  matrix:
+    platform: ["ubuntu2204", "macos_arm64"]
+    bazel: [8.x,9.x]
+  tasks:
+    run_test_module:
+      name: "toolchain smoke (no Mathlib)"
+      platform: ${{ platform }}
+      bazel: ${{ bazel }}
+      test_targets:
+        - "//:smoke_test"

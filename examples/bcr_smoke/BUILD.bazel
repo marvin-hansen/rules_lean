@@ -1,0 +1,8 @@
+load("@rules_lean//lean:lean.bzl", "lean_test")
+
+# Compiling this IS the test: Lean type-checking is the proof check.
+lean_test(
+    name = "smoke_test",
+    srcs = ["Smoke.lean"],
+    entry = "Smoke.lean",
+)

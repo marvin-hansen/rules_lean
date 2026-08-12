@@ -1,0 +1,22 @@
+# Registry presubmit module. Deliberately Mathlib-free -- see //.bcr/presubmit.yml.
+#
+# Exercises what must work for every consumer: the toolchain is resolved for the
+# EXECUTION platform, its archive downloads and verifies against a recorded sha256,
+# and it compiles Lean. It touches neither Lake, Mathlib nor the lockfile path,
+# which this repository's own CI covers.
+module(name = "bcr_smoke")
+
+bazel_dep(name = "rules_lean", version = "")
+local_path_override(
+    module_name = "rules_lean",
+    path = "../..",
+)
+
+lean = use_extension("@rules_lean//lean:lake.bzl", "lake")
+
+# No workspace tag. The `toolchain` tag exists for exactly this case -- testing the
+# rules themselves -- rather than as a path consumers are expected to take.
+lean.toolchain(version = "4.32.0")
+use_repo(lean, "lean_dist_4_32_0_toolchains")
+
+register_toolchains("@lean_dist_4_32_0_toolchains//:all")

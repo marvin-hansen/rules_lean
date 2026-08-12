@@ -1,0 +1,15 @@
+{
+  "homepage": "https://github.com/deepcausality-rs/rules_lean",
+  "maintainers": [
+    {
+      "name": "Marvin Hansen",
+      "email": "marvin.hansen@gmail.com",
+      "github": "marvin-hansen"
+    }
+  ],
+  "repository": [
+    "github:deepcausality-rs/rules_lean"
+  ],
+  "versions": [],
+  "yanked_versions": {}
+}
