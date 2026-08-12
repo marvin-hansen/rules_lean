@@ -157,6 +157,48 @@ toolchain(
 exports_files(["lean_toolchain/bin/lake"])
 '''
 
+# ── Toolchain declarations, split out from the distribution ──────────────────
+# Registering a toolchain forces Bazel to fetch the repo the `toolchain()` target
+# lives in, so that it can be evaluated during resolution — on EVERY build, for
+# every target, whether or not anything Lean is involved. Declaring `toolchain()`
+# next to the implementation therefore makes a 2.5G toolchain download the price
+# of admission for a pure-Rust build.
+#
+# Splitting the declaration into its own downloadless repo restores the laziness:
+# resolution reads the `toolchain()` targets from here (cheap), and Bazel fetches
+# the `@lean_dist` implementation only if the Lean toolchain is actually selected
+# — i.e. only when something is really compiling Lean. This is the same shape
+# rules_rust uses for `@rust_toolchains`.
+_DECLS_BUILD = '''\
+package(default_visibility = ["//visibility:public"])
+
+# Declaration only — no downloads. The implementation it points at lives in
+# @{dist}, which Bazel fetches lazily, when and only when this toolchain wins
+# resolution. Keep these two in separate repos: merging them puts the toolchain
+# download back on the critical path of every build in the workspace.
+toolchain(
+    name = "lean_toolchain_def",
+    toolchain = "@{dist}//:lean_toolchain",
+    toolchain_type = "@rules_lean//lean:toolchain_type",
+)
+'''
+
+def _lean_toolchain_decls_impl(rctx):
+    rctx.file("BUILD.bazel", _DECLS_BUILD.format(dist = rctx.attr.dist))
+
+lean_toolchain_decls = repository_rule(
+    implementation = _lean_toolchain_decls_impl,
+    attrs = {
+        "dist": attr.string(
+            mandatory = True,
+            doc = "Name of the `lean_dist` repo holding the toolchain implementation.",
+        ),
+    },
+    doc = "Emits `toolchain()` declarations for a Lean distribution and nothing else. " +
+          "Register THIS repo, not the distribution: it costs no download, so " +
+          "toolchain resolution stops dragging the Lean toolchain into every build.",
+)
+
 def _lean_dist_impl(rctx):
     _download_lean(rctx, rctx.attr.version, _detect_platform(rctx))
     rctx.file("BUILD.bazel", _DIST_BUILD)
@@ -775,7 +817,14 @@ def _lake_extension_impl(mctx):
             resolved.append((tag, version))
 
     for version in seen_versions:
-        lean_dist(name = _dist_name(version), version = version)
+        dist = _dist_name(version)
+        lean_dist(name = dist, version = version)
+
+        # Downloadless companion holding just the `toolchain()` declaration. Consumers
+        # should `register_toolchains("@<dist>_toolchains//:lean_toolchain_def")` —
+        # registering the workspace or the distribution instead forces that repo to be
+        # fetched during toolchain resolution, i.e. on every build of every target.
+        lean_toolchain_decls(name = dist + "_toolchains", dist = dist)
 
     for tag, version in resolved:
         dist = _dist_name(version)
