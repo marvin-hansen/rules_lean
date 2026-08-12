@@ -2,3 +2,11 @@
 # compiled from source. Without this, any Stardoc target builds protobuf's C++
 # sources first: ~1,470 exec-configuration actions to generate two markdown files.
 common --incompatible_enable_proto_toolchain_resolution
+
+# Do not plant bazel-bin, bazel-out, bazel-rules_lean and bazel-testlogs in the
+# repository root on every build. `bazel-rules_lean` points at execroot/_main,
+# which symlinks the source tree back including `.git`, so IDEs read it as a
+# second repository nested inside this one. They are already gitignored, so the
+# cost is purely that confusion. A prefix of `/` suppresses them entirely; use
+# `bazel info bazel-bin` to locate build outputs.
+build --symlink_prefix=/
