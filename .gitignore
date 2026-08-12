@@ -15,3 +15,6 @@ __pycache__/
 notebooks/interesting_packages.csv
 .claude/
 MODULE.bazel.lock
+
+# Jetbrains IDE settings
+.idea
