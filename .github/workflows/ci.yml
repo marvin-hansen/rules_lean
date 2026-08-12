@@ -18,14 +18,19 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        # The versions this ruleset supports, matching .bcr/presubmit.yml. Bazel 7
+        # is end-of-life and is deliberately not tested.
+        bazel: ["8.x", "9.x"]
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.10.0
         with:
           bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}-${{ matrix.os }}
+          disk-cache: ${{ github.workflow }}-${{ matrix.os }}-${{ matrix.bazel }}
           repository-cache: true
       - run: bazel test //docs/... --test_output=errors
+        env:
+          USE_BAZEL_VERSION: ${{ matrix.bazel }}
 
   buildifier:
     name: buildifier lint
