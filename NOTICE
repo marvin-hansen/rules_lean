@@ -1,0 +1,63 @@
+rules_lean
+Copyright (c) 2026 Marvin Hansen and the DeepCausality Authors
+
+This product includes software developed by Matt Marshall.
+
+  Foundation: https://github.com/tomato-bazel/rules_lean
+  Version imported: 0.5.4
+  License: MIT (retained; see LICENSE)
+
+That ruleset supplied the groundwork this one is built on: the Lean rules, the Lake
+integration, the RulesLean introspection library, and the tree-shaking hook. Most of the
+code here is still theirs, and the design owes it a great deal.
+
+The import is recorded as its own commit, unmodified, so that everything added since is
+visible as a plain diff against the original.
+
+WHY A SEPARATE RULESET
+----------------------
+
+The four changes below alter how the Lake workspace is fetched, when it is fetched, and
+which toolchain an action receives. Together they reach into the core of the Lake
+integration and the toolchain model. Work of that size is awkward to carry as a growing
+patch set against another project, and it benefits from its own version and release
+cadence, so it is published here instead. Where a change proves useful upstream, it is
+offered back.
+
+WHAT THIS RULESET ADDS
+----------------------
+
+1. Content-addressed fetch (`lock`)
+
+   A Lake workspace is normally resolved at fetch time: `lake update` clones every package
+   and `lake exe cache get` pulls one blob per Mathlib module, both inside `rctx.execute`.
+   Bazel's repository cache and `--experimental_remote_downloader` key on sha256 and
+   cannot see into a subprocess, so the workspace is re-fetched on every cold output base
+   and the tree it produces is not byte-reproducible.
+
+   Adds a lockfile pinning every package, and the prebuilt olean archive, by URL and
+   sha256, so the workspace materializes with `download_and_extract` and nothing else.
+
+2. Downloadless toolchain declarations
+
+   Registering a toolchain makes Bazel fetch the repository holding the `toolchain()`
+   target, so resolution can evaluate it, and resolution runs for every target in every
+   build. With the declaration inside the Lake workspace repository, a build that compiled
+   no Lean still materialized the entire workspace.
+
+   Emits the declarations into a repository that downloads nothing.
+
+3. Per-execution-platform toolchain selection
+
+   A repository rule always runs on the host, so host detection cannot answer which
+   platform an action will execute on. An unconstrained `toolchain()` matches every
+   execution platform, so under remote execution the host's binary is sent to the worker
+   and fails with an exec-format error.
+
+   Declares one toolchain per execution platform, constrained, and fetches only the one
+   that is selected.
+
+4. Reproducible olean archive packer (`tools/`)
+
+   Supporting tool for the lockfile path: cuts the artifact set to a consumer's import
+   closure and packs it into a byte-reproducible archive.
