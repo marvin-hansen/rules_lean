@@ -864,6 +864,16 @@ def _lake_extension_impl(mctx):
             seen_versions[version] = True
             resolved.append((tag, version))
 
+        # A `toolchain` tag asks for the Lean toolchain WITHOUT a Lake workspace.
+        # Not every consumer needs Mathlib: a project whose proofs import only Lean
+        # core, or a registry presubmit that must stay cheap, wants the compiler and
+        # nothing else. Without this the only way to obtain a toolchain was to declare
+        # a workspace, which drags in Lake resolution and, for mathlib consumers,
+        # gigabytes of oleans.
+        for tag in mod.tags.toolchain:
+            version = tag.version if tag.version.startswith("v") else "v" + tag.version
+            seen_versions[version] = True
+
     # The host platform, for the fetch-time `lake` runs only. Those genuinely execute
     # here, so host detection is the right answer for them — and the wrong answer for
     # the toolchain that actions consume, which is why the two are separated below.
@@ -938,7 +948,20 @@ _workspace_tag = tag_class(attrs = {
     ),
 })
 
+_toolchain_tag = tag_class(attrs = {
+    "version": attr.string(
+        mandatory = True,
+        doc = "Lean version tag, with or without the leading 'v' (e.g. '4.32.0'). " +
+              "Creates the per-platform distributions and the downloadless " +
+              "`@lean_dist_<version>_toolchains` declaration repo, with no Lake " +
+              "workspace. Register `@lean_dist_<version>_toolchains//:all`.",
+    ),
+})
+
 lake = module_extension(
     implementation = _lake_extension_impl,
-    tag_classes = {"workspace": _workspace_tag},
+    tag_classes = {
+        "toolchain": _toolchain_tag,
+        "workspace": _workspace_tag,
+    },
 )
